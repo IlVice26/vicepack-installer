@@ -21,7 +21,7 @@ MC_PROFILE = {
     "lastVersionId": "1.7.10-Forge10.13.4.1614-1.7.10",
     "javaArgs": "-Xmx4G -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode -XX:-UseAdaptiveSizePolicy -Xmn128M"
 }
-URL_MODPACK = "http://centos8-server/VicePack_Original_1_0.zip"
+URL_MODPACK = "http://185.25.207.152/files/VicePack_Original_1_0.zip"
 SHA_256_FILE = "3C94832DAC61DCFA4AF3144514B8BEDEF80A0BF81FA6F03132122BBB71781D63"
 
 
