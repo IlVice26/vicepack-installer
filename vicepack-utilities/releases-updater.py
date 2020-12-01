@@ -32,6 +32,14 @@ def update_releases():
     file.close()
     print("OK")
 
+    print("Fix isLastRelease.. ", end='')
+    versions = list(dict.keys(config['versions']))
+    for i in versions:
+        if config['versions'][i]['isLastRelease'] == "yes":
+            print(i)
+            break
+    config['versions'][i]['isLastRelease'] = 'no'
+
     version = input(str("\nVersione: "))
     zipFile = "VicePack_Original_" + version.replace(".", "_")
 
