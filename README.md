@@ -1,8 +1,8 @@
 # VicePack - Installer
 Automatic installer of the VicePack modpack for those using **Shiginima Launcher SE v4400**.  
-**Warning:** The launcher works only on Windows operating system and will install data only in the usual folder:
+**Warning:** The installer works only on Windows and will install the data in the folder:
 
-    C:\Users\%USER%\AppData\Roaming\.minecraft
+    C:\Users\%USER%\AppData\Roaming\.vicepack
 
 ## Usage
 ```
