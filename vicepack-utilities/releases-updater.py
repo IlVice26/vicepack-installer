@@ -45,11 +45,12 @@ def update_releases():
 
     # Creazione dello zip
     print("\nCreazione del file zip in corso.. ", end="")
-    """os.mkdir("files\\VicePack_Original")
-    shutil.copytree("files\\mods", "files\\VicePack_Original\\mods")
-    shutil.copytree("files\\forge", "files\\VicePack_Original\\forge")
+    os.mkdir("files\\VicePack_Original")
+    os.mkdir("files\\VicePack_Original\\VicePack_Original")
+    shutil.copytree("files\\mods", "files\\VicePack_Original\\VicePack_Original\\mods")
+    shutil.copytree("files\\forge", "files\\VicePack_Original\\VicePack_Original\\forge")
     shutil.make_archive("files\\" + zipFile, 'zip', 'files\\VicePack_Original')
-    shutil.rmtree("files\\VicePack_Original")"""
+    shutil.rmtree("files\\VicePack_Original")
     print("OK")
 
     # Hash of zipFile
