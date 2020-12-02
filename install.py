@@ -17,11 +17,12 @@ APPDATA_DIR = str(pathlib.Path.home()) + "\\AppData\\Roaming\\"
 MC_DIRECTORY = str(pathlib.Path.home()) + "\\AppData\\Roaming\\.minecraft\\"
 VP_DIRECTORY = str(pathlib.Path.home()) + "\\AppData\\Roaming\\.vicepack\\"
 MC_VERSIONS = MC_DIRECTORY + "versions\\"
-MC_MODS = MC_DIRECTORY + "mods\\"
+MC_MODS = VP_DIRECTORY + "mods\\"
 URL_MODPACK = "http://185.25.207.152/"
 SHA_256_FILE = "3C94832DAC61DCFA4AF3144514B8BEDEF80A0BF81FA6F03132122BBB71781D63"
 MC_PROFILE = {
     "name" : "VicePack - Original",
+    "gameDir" : VP_DIRECTORY,
     "lastVersionId": "1.7.10-Forge10.13.4.1614-1.7.10",
     "javaArgs": "-Xmx4G -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode -XX:-UseAdaptiveSizePolicy -Xmn128M"
 }
@@ -29,6 +30,7 @@ TEMPLATE_INSTALLED_VS = {
     "versionInstalled" : "null"
 }
 FILE_LIST_VP = ['config.json'] 
+
 
 
 def install_data(zipFile):
@@ -56,6 +58,8 @@ def install_data(zipFile):
     ALL_MODS = os.listdir(VP_DIRECTORY + "VicePack_Original\\mods\\")
     PATH_MODS = VP_DIRECTORY + "VicePack_Original\\mods\\"
     if os.path.exists(MC_MODS):
+        shutil.rmtree(MC_MODS)
+        os.mkdir(MC_MODS)
         files = os.listdir(MC_MODS)
         for mod in ALL_MODS:
             print("-> " + str(mod) + ".. ", end='')
@@ -82,10 +86,10 @@ def install_data(zipFile):
     print("Fatto!")
 
 
-def __ctrl_hash(hash):
+def __ctrl_hash(hash, filed):
     """It controls the hash of the zip file"""
     file_hash = hashlib.sha256()
-    with open(VP_DIRECTORY + "VicePack_Original_1_0.zip", "rb") as file:
+    with open(VP_DIRECTORY + filed, "rb") as file:
         fb = file.read(65536)
         while len(fb) > 0: # While there is still data being read from the file
             file_hash.update(fb) # Update the hash
@@ -97,11 +101,15 @@ def __ctrl_hash(hash):
         print("Hash non verificato, errore! Probabile manomissione del file!")
 
 
-def download_modpack(ver, hash):
+def download_modpack(ver, hash, filed):
     """It downloads all the files from the mirror"""
-    #urllib.request.urlretrieve(ver, VP_DIRECTORY + "VicePack_Original_1_0.zip")
+    try:
+        urllib.request.urlretrieve(ver, VP_DIRECTORY + filed)
+    except urllib.error.HTTPError:
+        print("\nLink del mirror non risponde.. Esco")
+        exit(-1)
     print("OK\nEseguo l'hash del modpack.. ", end='')
-    __ctrl_hash(hash)
+    __ctrl_hash(hash, filed)
 
 
 def modify_json_shignima():
@@ -144,7 +152,7 @@ def check_vicepack_version():
                 if release_file['versions'][i]['isLastRelease'] == "yes":
                     print(i + ".. Download dell'ultima versione dal mirror.. ", end='')
                     download_modpack(URL_MODPACK + release_file['versions'][i]['zipFile'],
-                        release_file['versions'][i]['sha256'])
+                        release_file['versions'][i]['sha256'], str(release_file['versions'][i]['zipFile']).replace("files/", ""))
                     install_data(release_file['versions'][i]['zipFile'].replace("files/", ""))
                     break
             conf_file['versionInstalled'] = i
@@ -160,20 +168,21 @@ def check_vicepack_version():
             for i in versions:
                 if release_file['versions'][i]['isLastRelease'] == "yes":
                     print(i)
-                if conf_file['versionInstalled'] == i:
-                    print("Nessun aggiornamento trovato!")
-                else:
-                    print("Trovato aggiornamento, versione " + i + "Download dell'ultimo aggiornamento.. ", end='')
-                    download_modpack(URL_MODPACK + release_file['versions'][i]['zipFile'],
-                        release_file['versions'][i]['sha256'])
-                    install_data(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
-                    break
-            conf_file['versionInstalled'] = i
-            file = open(VP_DIRECTORY + "config.json", "w+")     
-            file.write(json.dumps(conf_file, indent=4))
-            file.close()
-            print("Versione " + i + " scaricata con successo")
-            rm_files(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
+                    if conf_file['versionInstalled'] == i:
+                        print("\u001b[32m\nNessun aggiornamento trovato!\u001b[0m")
+                        break
+                    else:
+                        print("Trovato aggiornamento, versione " + i + "Download dell'ultimo aggiornamento.. ", end='')
+                        download_modpack(URL_MODPACK + release_file['versions'][i]['zipFile'],
+                            release_file['versions'][i]['sha256'], str(release_file['versions'][i]['zipFile']).replace("files/", ""))
+                        install_data(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
+                        print("\u001b[32m\nVersione " + i + " scaricata con successo\u001b[0m")
+                        conf_file['versionInstalled'] = i
+                        file = open(VP_DIRECTORY + "config.json", "w+")     
+                        file.write(json.dumps(conf_file, indent=4))
+                        file.close()
+                        rm_files(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
+                        break
     else:
         print("\nErrore: file 'config.json' non trovato dopo il precedente controllo.")
         exit(-1)
@@ -181,8 +190,12 @@ def check_vicepack_version():
 
 def download_releases_json():
     print("\nDownload in corso di releases.json dal mirror.. ", end='')
-    urllib.request.urlretrieve(URL_MODPACK + "files/json/releases.json",
-        VP_DIRECTORY + "releases.json")
+    try:
+        urllib.request.urlretrieve(URL_MODPACK + "files/json/releases.json",
+            VP_DIRECTORY + "releases.json")
+    except urllib.error.HTTPError:
+        print("\nLink del mirror non risponde.. Esco")
+        exit(-1)
     print("OK")
 
 
@@ -198,6 +211,7 @@ def create_config():
 
 
 def setup_vicepack():
+    # Controllo se la cartella .vicepack è presente
     print("Controllo se VicePack è stato installato.. ", end='')
     if not os.path.exists(APPDATA_DIR + "\\.vicepack"):
         print("Installazione non trovata\nCreo le impostazioni del launcher..", end='')
@@ -216,12 +230,24 @@ def setup_vicepack():
                 print("OK")
             else:
                 print("OK")
-        else:
-            print("Nessun problema trovato")
+    
+    # Controllo se le impostazioni del launcher di Shigninima sono modificate
+    print("\nControllo se VicePack è stato installato nelle impostazioni del launcher... ")
+    try:
+        with open(MC_DIRECTORY + "launcher_profiles.json", 'r+') as file:
+            print("--> launcher_profiles.json.. " , end='')
+            setting = json.load(file)
+            if not "VicePack - Original" in setting['profiles']:
+                modify_json_shignima()
+            else:
+                print("OK")
+    except FileNotFoundError:
+        print("\nIl file 'launcher_profiles.json' non è stato trovato. " +
+            "Sei sicuro di aver aperto il launcher?")
 
 
 if __name__ == "__main__":
-    print("VicePack Installer - Versione 1.1\n") 
+    print(u"\u001b[33mVicePack Installer - Versione 1.2\u001b[0m\n")
     setup_vicepack()
     download_releases_json()
     check_vicepack_version()
