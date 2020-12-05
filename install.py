@@ -58,8 +58,6 @@ def install_data(zipFile):
     ALL_MODS = os.listdir(VP_DIRECTORY + "VicePack_Original\\mods\\")
     PATH_MODS = VP_DIRECTORY + "VicePack_Original\\mods\\"
     if os.path.exists(MC_MODS):
-        shutil.rmtree(MC_MODS)
-        os.mkdir(MC_MODS)
         files = os.listdir(MC_MODS)
         for mod in ALL_MODS:
             print("-> " + str(mod) + ".. ", end='')
