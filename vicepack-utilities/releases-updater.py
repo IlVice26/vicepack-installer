@@ -32,16 +32,23 @@ def update_releases():
     file.close()
     print("OK")
 
-    print("Fix isLastRelease.. ", end='')
-    versions = list(dict.keys(config['versions']))
-    for i in versions:
-        if config['versions'][i]['isLastRelease'] == "yes":
-            print(i)
-            break
-    config['versions'][i]['isLastRelease'] = 'no'
-
     version = input(str("\nVersione: "))
     zipFile = "VicePack_Original_" + version.replace(".", "_")
+
+    update = input(str("Questo è un aggiornamento?: ")).lower()
+
+    if update.__contains__("y"):
+        isAnUpdate = "yes"
+        isLastRelease = "no"
+    else:
+        versions = list(dict.keys(config['versions']))
+        for i in versions:
+            if config['versions'][i]['isLastRelease'] == "yes":
+                print(i)
+                break
+        config['versions'][i]['isLastRelease'] = 'no'
+        isAnUpdate = "no"
+        isLastRelease = "yes"
 
     # Creazione dello zip
     print("\nCreazione del file zip in corso.. ", end="")
@@ -74,7 +81,8 @@ def update_releases():
     print("Creazione del nuovo 'releases.json'.. ", end='')
     config_dict = {
         "sha256" : sha256,
-        "isLastRelease" : "yes",
+        "isLastRelease" : isLastRelease,
+        "isAnUpdate" : isAnUpdate,
         "changelog" : changelog,
         "zipFile" : 'files/' + zipFile + '.zip',
         "modList" : modList

@@ -7,6 +7,7 @@ VicePack installer
 import json
 import pathlib
 import os
+import requests
 import urllib.request
 import hashlib
 import zipfile
@@ -19,6 +20,7 @@ VP_DIRECTORY = str(pathlib.Path.home()) + "\\AppData\\Roaming\\.vicepack\\"
 MC_VERSIONS = MC_DIRECTORY + "versions\\"
 MC_MODS = VP_DIRECTORY + "mods\\"
 URL_MODPACK = "http://185.25.207.152/"
+URL_INSTALLER_RELEASE = "https://api.github.com/repos/IlVice26/vicepack-installer/releases/latest"
 SHA_256_FILE = "3C94832DAC61DCFA4AF3144514B8BEDEF80A0BF81FA6F03132122BBB71781D63"
 MC_PROFILE = {
     "name" : "VicePack - Original",
@@ -27,33 +29,35 @@ MC_PROFILE = {
     "javaArgs": "-Xmx4G -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode -XX:-UseAdaptiveSizePolicy -Xmn128M"
 }
 TEMPLATE_INSTALLED_VS = {
-    "versionInstalled" : "null"
+    "versionInstalled" : "null",
+    "installerVersion" : "null"
 }
 FILE_LIST_VP = ['config.json'] 
 
 
 
-def install_data(zipFile):
+def install_data(zipFile, tag):
     """It extracts all the files and install all of them"""
     print("\nEstraggo i file dallo zip.. ", end='')
     with zipfile.ZipFile(VP_DIRECTORY + zipFile, "r") as file:
         file.extractall(VP_DIRECTORY)
     print("Fatto\nControllo le versioni di minecraft installate.. ")
     
-    if os.path.exists(MC_VERSIONS + "1.7.10"):
-        print("-> 1.7.10 OK")
-    else:
-        print("-> 1.7.10 Non presente, installo.. ", end='')
-        os.rename(VP_DIRECTORY + "VicePack_Original\\forge\\1.7.10 ", MC_VERSIONS + "1.7.10")
-        print("Fatto!")
+    if tag == "lastRelease":
+        if os.path.exists(MC_VERSIONS + "1.7.10"):
+            print("-> 1.7.10 OK")
+        else:
+            print("-> 1.7.10 Non presente, installo.. ", end='')
+            os.rename(VP_DIRECTORY + "VicePack_Original\\forge\\1.7.10 ", MC_VERSIONS + "1.7.10")
+            print("Fatto!")
 
-    if os.path.exists(MC_VERSIONS + "1.7.10-Forge10.13.4.1614-1.7.10"):
-        print("-> 1.7.10-Forge10.13.4.1614-1.7.10 OK")
-    else:
-        print("-> 1.7.10-Forge10.13.4.1614-1.7.10 Non presente, installo.. ", end='')
-        os.rename(VP_DIRECTORY + "VicePack_Original\\forge\\1.7.10-Forge10.13.4.1614-1.7.10", MC_VERSIONS + "\\1.7.10-Forge10.13.4.1614-1.7.10")
-        print("Fatto!")
-    
+        if os.path.exists(MC_VERSIONS + "1.7.10-Forge10.13.4.1614-1.7.10"):
+            print("-> 1.7.10-Forge10.13.4.1614-1.7.10 OK")
+        else:
+            print("-> 1.7.10-Forge10.13.4.1614-1.7.10 Non presente, installo.. ", end='')
+            os.rename(VP_DIRECTORY + "VicePack_Original\\forge\\1.7.10-Forge10.13.4.1614-1.7.10", MC_VERSIONS + "\\1.7.10-Forge10.13.4.1614-1.7.10")
+            print("Fatto!")
+
     print("Controllo cartella mods..")
     ALL_MODS = os.listdir(VP_DIRECTORY + "VicePack_Original\\mods\\")
     PATH_MODS = VP_DIRECTORY + "VicePack_Original\\mods\\"
@@ -62,7 +66,7 @@ def install_data(zipFile):
         for mod in ALL_MODS:
             print("-> " + str(mod) + ".. ", end='')
             if mod in files:
-                print("OK")
+                print("\u001b[32mOK\u001b[0m")
             else:
                 print("Non presente, installo.. ", end='')
                 os.rename(PATH_MODS + mod, MC_MODS + mod)
@@ -73,11 +77,12 @@ def install_data(zipFile):
         for mod in ALL_MODS:
             print("-> " + str(mod) + ".. ", end='')
             if mod in files:
-                print("OK")
+                print("\u001b[32mOK\u001b[0m")
             else:
                 print("Non presente, installo.. ", end='')
                 os.rename(PATH_MODS + mod, MC_MODS + mod)
                 print("Fatto!")
+
 
     print("Elimino i file del programma.. ", end='')
     shutil.rmtree(VP_DIRECTORY + "VicePack_Original")
@@ -96,7 +101,11 @@ def __ctrl_hash(hash, filed):
     if file_hash.hexdigest().upper() == hash:
         print("Hash Verificato! Il file è integro!")
     else:
-        print("Hash non verificato, errore! Probabile manomissione del file!")
+        print("\u001b[31mHash non verificato, errore! Probabile manomissione del file!\u001b[0m")
+        print("\nSHA256 su releases.json: " + file_hash.hexdigest().upper()
+            + "\nSHA256 di " + filed + ": " + hash)
+        print("\nContatta <eliavicentini26@gmail.com> per risolvere il problema!")
+        exit(-1)
 
 
 def download_modpack(ver, hash, filed):
@@ -141,46 +150,70 @@ def check_vicepack_version():
         file = open(VP_DIRECTORY + "releases.json", "r")
         release_file = json.load(file)
         file.close()
-        
+
+        temp_versions = []
+        updates = [] 
+        lastRelease = "null"
+        versions = list(dict.keys(release_file['versions']))
+        for i in versions:
+            temp_versions.append(i)
+            if release_file["versions"][i]["isLastRelease"] == "yes":
+                lastRelease = i
+
+        for i in range(temp_versions.index(lastRelease) + 1, len(temp_versions)):
+            updates.append(temp_versions[i])
+
         if conf_file['versionInstalled'] == 'null':
-            print("Nessuna versione installata.. \nUltima versione rilasciata: ", end='')
-            
-            versions = list(dict.keys(release_file['versions']))
-            for i in versions:
-                if release_file['versions'][i]['isLastRelease'] == "yes":
-                    print(i + ".. Download dell'ultima versione dal mirror.. ", end='')
-                    download_modpack(URL_MODPACK + release_file['versions'][i]['zipFile'],
-                        release_file['versions'][i]['sha256'], str(release_file['versions'][i]['zipFile']).replace("files/", ""))
-                    install_data(release_file['versions'][i]['zipFile'].replace("files/", ""))
-                    break
-            conf_file['versionInstalled'] = i
-            file = open(VP_DIRECTORY + "config.json", "w+")     
-            file.write(json.dumps(conf_file, indent=4))
-            file.close()
-            print("Versione " + i + " scaricata con successo")
-            rm_files(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
+            print("Nessuna versione installata.. \nUltima versione rilasciata: " + lastRelease)
+            print("Download dell'ultima versione dal mirror.. ", end='')
+            download_modpack(URL_MODPACK + release_file['versions'][lastRelease]['zipFile'],
+                            release_file['versions'][lastRelease]['sha256'], 
+                            str(release_file['versions'][lastRelease]['zipFile']).replace("files/", ""))
+            install_data(release_file['versions'][lastRelease]['zipFile'].replace("files/", ""), "lastRelease")
+
+            if (len(updates) != 0):
+                print("Aggiornamenti del modpack da installare: " + str(len(lastRelease)))
+                for update in updates:
+                    print("\nDownload dell'update " + update + " in corso.. ", end='')
+                    download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
+                                    release_file['versions'][update]['sha256'], 
+                                    str(release_file['versions'][update]['zipFile']).replace("files/", ""))
+                    install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), "update")
+                    print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
+
+                conf_file['versionInstalled'] = updates[-1]
+                file = open(VP_DIRECTORY + "config.json", "w+")     
+                file.write(json.dumps(conf_file, indent=4))
+                file.close()
+            else:
+                conf_file['versionInstalled'] = lastRelease
+                file = open(VP_DIRECTORY + "config.json", "w+")     
+                file.write(json.dumps(conf_file, indent=4))
+                file.close()
         else:
             print("Versione Installata: " + conf_file['versionInstalled'])
-            print("Controllo se sono presenti aggiornamenti.. Ultima versione rilasciata: ", end='')
-            versions = list(dict.keys(release_file['versions']))
-            for i in versions:
-                if release_file['versions'][i]['isLastRelease'] == "yes":
-                    print(i)
-                    if conf_file['versionInstalled'] == i:
-                        print("\u001b[32m\nNessun aggiornamento trovato!\u001b[0m")
-                        break
-                    else:
-                        print("Trovato aggiornamento, versione " + i + "Download dell'ultimo aggiornamento.. ", end='')
-                        download_modpack(URL_MODPACK + release_file['versions'][i]['zipFile'],
-                            release_file['versions'][i]['sha256'], str(release_file['versions'][i]['zipFile']).replace("files/", ""))
-                        install_data(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
-                        print("\u001b[32m\nVersione " + i + " scaricata con successo\u001b[0m")
-                        conf_file['versionInstalled'] = i
-                        file = open(VP_DIRECTORY + "config.json", "w+")     
-                        file.write(json.dumps(conf_file, indent=4))
-                        file.close()
-                        rm_files(str(release_file['versions'][i]['zipFile']).replace("files/", ""))
-                        break
+            print("Controllo se sono presenti aggiornamenti.. ", end='')
+            
+            if (len(updates) != 0):
+                if conf_file['versionInstalled'] == updates[-1]:
+                    print("\u001b[32m\n\nNessun aggiornamento trovato!\u001b[0m")
+                else:
+                    print("Aggiornamenti trovati: " + str(len(temp_versions) - 1 
+                        - temp_versions.index(conf_file['versionInstalled'])))
+                    for update in updates:
+                        print("\nDownload dell'update " + update + " in corso.. ", end='')
+                        download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
+                            release_file['versions'][update]['sha256'], str(release_file['versions'][update]['zipFile']).replace("files/", ""))
+                        install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), 
+                        "update")
+                        print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
+                
+                    conf_file['versionInstalled'] = updates[-1]
+                    file = open(VP_DIRECTORY + "config.json", "w+")     
+                    file.write(json.dumps(conf_file, indent=4))
+                    file.close()
+            else:
+                print("\u001b[32m\n\nNessun aggiornamento trovato!\u001b[0m")
     else:
         print("\nErrore: file 'config.json' non trovato dopo il precedente controllo.")
         exit(-1)
@@ -194,7 +227,7 @@ def download_releases_json():
     except urllib.error.HTTPError:
         print("\nLink del mirror non risponde.. Esco")
         exit(-1)
-    print("OK")
+    print("\u001b[32mOK\u001b[0m")
 
 
 def rm_files(zipFile):
@@ -215,7 +248,7 @@ def setup_vicepack():
         print("Installazione non trovata\nCreo le impostazioni del launcher..", end='')
         os.mkdir(APPDATA_DIR + "\\.vicepack")
         create_config()
-        print("OK")
+        print("\u001b[32mOK\u001b[0m")
         modify_json_shignima()
     else:
         print("Installazione trovata\nControllo integrità dei file.. ", end='')
@@ -225,9 +258,24 @@ def setup_vicepack():
             if not file in file_list:
                 print("Non presente, creo il file.. ", end='')
                 create_config()
-                print("OK")
+                print("\u001b[32mOK\u001b[0m")
             else:
-                print("OK")
+                file_config = open(VP_DIRECTORY + "config.json", "r")
+                conf = json.load(file_config)
+                file_config.close()
+
+                actual_conf = conf.keys()
+                template_conf = TEMPLATE_INSTALLED_VS.keys()
+
+                for line in template_conf:
+                    if line not in actual_conf:
+                        conf[line] = "null"
+                        file_config = open(VP_DIRECTORY + "config.json", "w")
+                        file_config.write(json.dumps(conf, indent=4))
+                        file_config.close()
+                        break
+
+                print("\u001b[32mOK\u001b[0m")
     
     # Controllo se le impostazioni del launcher di Shigninima sono modificate
     print("\nControllo se VicePack è stato installato nelle impostazioni del launcher... ")
@@ -238,14 +286,73 @@ def setup_vicepack():
             if not "VicePack - Original" in setting['profiles']:
                 modify_json_shignima()
             else:
-                print("OK")
+                print("\u001b[32mOK\u001b[0m")
     except FileNotFoundError:
         print("\nIl file 'launcher_profiles.json' non è stato trovato. " +
             "Sei sicuro di aver aperto il launcher?")
 
 
+def check_vicepack_installer():
+    response = requests.get(URL_INSTALLER_RELEASE)
+    tag = response.json()["tag_name"]
+    update_url = response.json()["assets"][0]["browser_download_url"]
+    update_file = str(response.json()["assets"][0]["browser_download_url"]).split("/")[-1]
+
+    file = open(VP_DIRECTORY + "config.json", "r")
+    config = json.load(file)
+    file.close()
+
+    if config['installerVersion'] == "null":
+        print("\nVersione dell'installer sconosciuta.. " 
+            + "Ultima versione rilasciata su: " + tag)
+
+        try:
+            print("Download della versione: " + tag + " in corso.. ", end='')
+            urllib.request.urlretrieve(update_url, update_file)
+        except urllib.error.HTTPError:
+            print("Impossibile scaricare l'aggiornamento")
+        print("\u001b[32mOK\u001b[0m")
+
+        file = open(VP_DIRECTORY + "config.json", "w")
+        config['installerVersion'] = tag
+        file.write(json.dumps(config, indent=4))
+        file.close()
+
+        print("\nupdater.py installerà l'aggiornamento!" +
+            " E' solo una questione di secondi!")
+
+        os.system("updater.py")
+        exit(0)
+
+    elif config['installerVersion'] == tag:
+        print("\u001b[32m\nNessun aggiornamento trovato dell installer!" +
+            "\nVersione installata: " + tag + "\u001b[0m")
+    else:
+        print("\nVersione dell'installer: " + config['installerVersion']
+            + ", Ultima versione rilasciata su Github: " + tag)
+        
+        try:
+            print("Download della versione: " + tag + " in corso.. ", end='')
+            urllib.request.urlretrieve(update_url, update_file)
+        except urllib.error.HTTPError:
+            print("Impossibile scaricare l'aggiornamento")
+        print("\u001b[32mOK\u001b[0m")
+
+        file = open(VP_DIRECTORY + "config.json", "w")
+        config['installerVersion'] = tag
+        file.write(json.dumps(config, indent=4))
+        file.close()
+
+        print("\nupdater.py installerà l'aggiornamento!" +
+            " E' solo una questione di secondi!")
+
+        os.system("updater.py")
+        exit(0)
+
+
 if __name__ == "__main__":
-    print(u"\u001b[33mVicePack Installer - Versione 1.2\u001b[0m\n")
+    print(u"\u001b[33mVicePack Installer - Versione 1.3\u001b[0m\n")
     setup_vicepack()
+    check_vicepack_installer()
     download_releases_json()
     check_vicepack_version()
