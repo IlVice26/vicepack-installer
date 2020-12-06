@@ -5,9 +5,15 @@ Automatic installer of the VicePack modpack for those using **Shiginima Launcher
     C:\Users\%USER%\AppData\Roaming\.vicepack
 
 ## Usage
-```
-python3 install.py
-```
+
+First install **requests** Python3 module via 
+
+    pip3 install requests
+
+Then
+
+    python3 install.py
+
 Easier than that!
 
 ## Info
