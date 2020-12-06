@@ -22,9 +22,7 @@ def unzip_files():
     with zipfile.ZipFile("vicepack_installer.zip", "r") as file:
         file.extractall("temp")
     print("\u001b[32mOK\u001b[0m\n\nCopia dei file nella directory")
-    
-    shutil.move("temp\\install.py", "temp\\install.py.test")
-    
+
     files = os.listdir("temp")
     for file in files:
         if file != 'updater.py':
