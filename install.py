@@ -19,6 +19,7 @@ MC_DIRECTORY = str(pathlib.Path.home()) + "\\AppData\\Roaming\\.minecraft\\"
 VP_DIRECTORY = str(pathlib.Path.home()) + "\\AppData\\Roaming\\.vicepack\\"
 MC_VERSIONS = MC_DIRECTORY + "versions\\"
 MC_MODS = VP_DIRECTORY + "mods\\"
+MC_CONF = VP_DIRECTORY + "config\\"
 URL_MODPACK = "http://185.25.207.152/"
 URL_INSTALLER_RELEASE = "https://api.github.com/repos/IlVice26/vicepack-installer/releases/latest"
 SHA_256_FILE = "3C94832DAC61DCFA4AF3144514B8BEDEF80A0BF81FA6F03132122BBB71781D63"
@@ -32,8 +33,14 @@ TEMPLATE_INSTALLED_VS = {
     "versionInstalled" : "null",
     "installerVersion" : "null"
 }
-FILE_LIST_VP = ['config.json'] 
-
+FILE_LIST_VP = {
+    "main_dir" : [
+        'config.json'
+    ],
+    "conf_dir" : [
+        'CustomMainMenu\\mainmenu.json'
+    ]
+} 
 
 
 def install_data(zipFile, tag):
@@ -41,9 +48,9 @@ def install_data(zipFile, tag):
     print("\nEstraggo i file dallo zip.. ", end='')
     with zipfile.ZipFile(VP_DIRECTORY + zipFile, "r") as file:
         file.extractall(VP_DIRECTORY)
-    print("Fatto\nControllo le versioni di minecraft installate.. ")
     
     if tag == "lastRelease":
+        print("Fatto\nControllo le versioni di minecraft installate.. ")
         if os.path.exists(MC_VERSIONS + "1.7.10"):
             print("-> 1.7.10 OK")
         else:
@@ -230,6 +237,31 @@ def download_releases_json():
     print("\u001b[32mOK\u001b[0m")
 
 
+def download_cmm_data():
+    #print("\nDownload in corso di mainmenu.json (CMM) dal mirror.. ", end='')
+    if not os.path.exists(VP_DIRECTORY + "config\\CustomMainMenu"):
+        os.mkdir(VP_DIRECTORY + "config\\CustomMainMenu")
+    try:
+        urllib.request.urlretrieve(URL_MODPACK + "files/json/mainmenu.json",
+            VP_DIRECTORY + "config\\CustomMainMenu\\mainmenu.json")
+    except urllib.error.HTTPError:
+        print("\nLink del mirror non risponde.. Esco")
+        exit(-1)
+    
+    #print("\u001b[32mOK\u001b[0m")
+
+    #print("\nDownload in corso degli assets di CMM dal mirror.. ", end='')
+    try:
+        urllib.request.urlretrieve(URL_MODPACK + "files/custommainmenu.zip",
+            VP_DIRECTORY + "custommainmenu.zip")
+    except urllib.error.HTTPError:
+        print("\nLink del mirror non risponde.. Esco")
+        exit(-1)
+    with zipfile.ZipFile(VP_DIRECTORY + "custommainmenu.zip", "r") as file:
+        file.extractall(VP_DIRECTORY + "resources\\")
+    #print("\u001b[32mOK\u001b[0m")
+
+
 def rm_files(zipFile):
     os.remove(VP_DIRECTORY + "releases.json")
     os.remove(VP_DIRECTORY + zipFile)
@@ -251,30 +283,48 @@ def setup_vicepack():
         print("\u001b[32mOK\u001b[0m")
         modify_json_shignima()
     else:
-        print("Installazione trovata\nControllo integrità dei file.. ", end='')
-        file_list = os.listdir(APPDATA_DIR + "\\.vicepack")
-        for file in FILE_LIST_VP:
-            print("\n--> " + file + ".. ", end='')    
-            if not file in file_list:
-                print("Non presente, creo il file.. ", end='')
-                create_config()
+        print("Installazione trovata\nControllo integrità dei file.. ")
+
+        # Files in FILE_LIST_VP
+        main_dir_files = FILE_LIST_VP["main_dir"]
+        conf_dir_files = FILE_LIST_VP["conf_dir"]
+
+        # Ctrl for files in VP_DIRECTORY
+        for file in main_dir_files:
+            print("--> " + file + ".. ", end='')    
+            if not os.path.exists(VP_DIRECTORY + file):
+                    print("Non presente, creo il file.. ", end='')
+                    create_config()
+                    print("\u001b[32mOK\u001b[0m")
+            else:
+                if file == "config.json":
+                    file_config = open(VP_DIRECTORY + "config.json", "r")
+                    conf = json.load(file_config)
+                    file_config.close()
+
+                    actual_conf = conf.keys()
+                    template_conf = TEMPLATE_INSTALLED_VS.keys()
+
+                    for line in template_conf:
+                        if line not in actual_conf:
+                            conf[line] = "null"
+                            file_config = open(VP_DIRECTORY + "config.json", "w")
+                            file_config.write(json.dumps(conf, indent=4))
+                            file_config.close()
+                            break
+                    print("\u001b[32mOK\u001b[0m")
+                else:
+                    print("\u001b[32mOK\u001b[0m")
+
+
+        # Ctrl files in Config dir of VP_DIRECTORY
+        for file in conf_dir_files:
+            print("--> " + file + ".. ", end='')
+            if not os.path.exists(MC_CONF + file):
+                print("Non scaricato, scarico i dati.. ", end='')
+                download_cmm_data()
                 print("\u001b[32mOK\u001b[0m")
             else:
-                file_config = open(VP_DIRECTORY + "config.json", "r")
-                conf = json.load(file_config)
-                file_config.close()
-
-                actual_conf = conf.keys()
-                template_conf = TEMPLATE_INSTALLED_VS.keys()
-
-                for line in template_conf:
-                    if line not in actual_conf:
-                        conf[line] = "null"
-                        file_config = open(VP_DIRECTORY + "config.json", "w")
-                        file_config.write(json.dumps(conf, indent=4))
-                        file_config.close()
-                        break
-
                 print("\u001b[32mOK\u001b[0m")
     
     # Controllo se le impostazioni del launcher di Shigninima sono modificate
@@ -351,7 +401,8 @@ def check_vicepack_installer():
 
 
 if __name__ == "__main__":
-    print(u"\u001b[33mVicePack Installer - Versione 1.3\u001b[0m\n")
+    os.system("cls")
+    print(u"\u001b[33mVicePack Installer - Versione 1.4\u001b[0m\n")
     setup_vicepack()
     check_vicepack_installer()
     download_releases_json()
