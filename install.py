@@ -90,9 +90,9 @@ def install_data(zipFile, tag):
                 os.rename(PATH_MODS + mod, MC_MODS + mod)
                 print("Fatto!")
 
-
     print("Elimino i file del programma.. ", end='')
     shutil.rmtree(VP_DIRECTORY + "VicePack_Original")
+    os.remove(VP_DIRECTORY + str(zipFile).replace("files/", ""))
     print("Fatto!")
 
 
@@ -158,6 +158,10 @@ def check_vicepack_version():
         release_file = json.load(file)
         file.close()
 
+        file = open(MC_CONF + "CustomMainMenu\\mainmenu.json", "r")
+        menu_file = json.load(file)
+        file.close()
+
         temp_versions = []
         updates = [] 
         lastRelease = "null"
@@ -181,16 +185,26 @@ def check_vicepack_version():
             if (len(updates) != 0):
                 print("Aggiornamenti del modpack da installare: " + str(len(lastRelease)))
                 for update in updates:
-                    print("\nDownload dell'update " + update + " in corso.. ", end='')
-                    download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
-                                    release_file['versions'][update]['sha256'], 
-                                    str(release_file['versions'][update]['zipFile']).replace("files/", ""))
-                    install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), "update")
-                    print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
+                    if not update == conf_file['versionInstalled']:
+                        print("\nDownload dell'update " + update + " in corso.. ", end='')
+                        download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
+                                        release_file['versions'][update]['sha256'], 
+                                        str(release_file['versions'][update]['zipFile']).replace("files/", ""))
+                        install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), "update")
+                        print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
 
+                # Update dei valori
+                menu_file["texts"]["info-modpack"]["text"] = "Vicepack: " + updates[-1] 
                 conf_file['versionInstalled'] = updates[-1]
+
+                # Update della versione in config.json
                 file = open(VP_DIRECTORY + "config.json", "w+")     
                 file.write(json.dumps(conf_file, indent=4))
+                file.close()
+
+                # Update della versione in mainmenu.json
+                file = open(MC_CONF + "CustomMainMenu\\mainmenu.json", "w+")
+                file.write(json.dumps(menu_file, indent=4))
                 file.close()
             else:
                 conf_file['versionInstalled'] = lastRelease
@@ -208,16 +222,26 @@ def check_vicepack_version():
                     print("Aggiornamenti trovati: " + str(len(temp_versions) - 1 
                         - temp_versions.index(conf_file['versionInstalled'])))
                     for update in updates:
-                        print("\nDownload dell'update " + update + " in corso.. ", end='')
-                        download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
-                            release_file['versions'][update]['sha256'], str(release_file['versions'][update]['zipFile']).replace("files/", ""))
-                        install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), 
-                        "update")
-                        print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
-                
+                        if not update == conf_file['versionInstalled']:
+                            print("\nDownload dell'update " + update + " in corso.. ", end='')
+                            download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
+                                release_file['versions'][update]['sha256'], str(release_file['versions'][update]['zipFile']).replace("files/", ""))
+                            install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), 
+                            "update")
+                            print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
+
+                    # Update dei valori
+                    menu_file["texts"]["info-modpack"]["text"] = "Vicepack: " + updates[-1] 
                     conf_file['versionInstalled'] = updates[-1]
+
+                    # Update della versione in config.json
                     file = open(VP_DIRECTORY + "config.json", "w+")     
                     file.write(json.dumps(conf_file, indent=4))
+                    file.close()
+
+                    # Update della versione in mainmenu.json
+                    file = open(MC_CONF + "CustomMainMenu\\mainmenu.json", "w+")
+                    file.write(json.dumps(menu_file, indent=4))
                     file.close()
             else:
                 print("\u001b[32m\n\nNessun aggiornamento trovato!\u001b[0m")
@@ -238,7 +262,7 @@ def download_releases_json():
 
 
 def download_cmm_data():
-    #print("\nDownload in corso di mainmenu.json (CMM) dal mirror.. ", end='')
+
     if not os.path.exists(VP_DIRECTORY + "config\\CustomMainMenu"):
         os.mkdir(VP_DIRECTORY + "config\\CustomMainMenu")
     try:
@@ -248,9 +272,6 @@ def download_cmm_data():
         print("\nLink del mirror non risponde.. Esco")
         exit(-1)
     
-    #print("\u001b[32mOK\u001b[0m")
-
-    #print("\nDownload in corso degli assets di CMM dal mirror.. ", end='')
     try:
         urllib.request.urlretrieve(URL_MODPACK + "files/custommainmenu.zip",
             VP_DIRECTORY + "custommainmenu.zip")
@@ -259,12 +280,11 @@ def download_cmm_data():
         exit(-1)
     with zipfile.ZipFile(VP_DIRECTORY + "custommainmenu.zip", "r") as file:
         file.extractall(VP_DIRECTORY + "resources\\")
-    #print("\u001b[32mOK\u001b[0m")
+        os.remove(VP_DIRECTORY + "custommainmenu.zip")
 
 
-def rm_files(zipFile):
+def rm_files():
     os.remove(VP_DIRECTORY + "releases.json")
-    os.remove(VP_DIRECTORY + zipFile)
 
 
 def create_config():
@@ -315,7 +335,6 @@ def setup_vicepack():
                     print("\u001b[32mOK\u001b[0m")
                 else:
                     print("\u001b[32mOK\u001b[0m")
-
 
         # Ctrl files in Config dir of VP_DIRECTORY
         for file in conf_dir_files:
@@ -407,3 +426,4 @@ if __name__ == "__main__":
     check_vicepack_installer()
     download_releases_json()
     check_vicepack_version()
+    rm_files()
