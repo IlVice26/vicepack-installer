@@ -421,7 +421,7 @@ def check_vicepack_installer():
 
 if __name__ == "__main__":
     os.system("cls")
-    print(u"\u001b[33mVicePack Installer - Versione 1.4\u001b[0m\n")
+    print(u"\u001b[33mVicePack Installer - Versione 1.4.1\u001b[0m\n")
     setup_vicepack()
     check_vicepack_installer()
     download_releases_json()
