@@ -12,6 +12,7 @@ import urllib.request
 import hashlib
 import zipfile
 import shutil
+import time
 
 
 APPDATA_DIR = str(pathlib.Path.home()) + "\\AppData\\Roaming\\"
@@ -43,7 +44,7 @@ FILE_LIST_VP = {
 } 
 
 
-def install_data(zipFile, tag):
+def install_data(zipFile, tag, modList):
     """It extracts all the files and install all of them"""
     print("\nEstraggo i file dallo zip.. ", end='')
     with zipfile.ZipFile(VP_DIRECTORY + zipFile, "r") as file:
@@ -68,32 +69,131 @@ def install_data(zipFile, tag):
     print("Controllo cartella mods..")
     ALL_MODS = os.listdir(VP_DIRECTORY + "VicePack_Original\\mods\\")
     PATH_MODS = VP_DIRECTORY + "VicePack_Original\\mods\\"
+
     if os.path.exists(MC_MODS):
-        files = os.listdir(MC_MODS)
-        for mod in ALL_MODS:
-            print("-> " + str(mod) + ".. ", end='')
-            if mod in files:
-                print("\u001b[32mOK\u001b[0m")
+        
+        # Installazione dell'update con versione < 2.3
+        if type(modList) is list:
+
+            # Aggiunta delle mod
+            files = os.listdir(MC_MODS)
+            for mod in ALL_MODS:
+                print("-> " + str(mod) + " | ", end='')
+                if mod in files:
+                    print("\u001b[32mOK\u001b[0m")
+                else:
+                    print("Installo.. ", end='')
+                    os.rename(PATH_MODS + mod, MC_MODS + mod)
+                    print("Fatto!")
+
+        # Installazione dell'update con versione >= 2.3
+        elif type(modList) is dict:
+
+            add_mod = modList['add']
+            rem_mod = modList['remove']
+            files = os.listdir(MC_MODS)
+
+            # Rimozione delle mod
+            if len(rem_mod) != 0:
+                print("\033[31m\nEliminazione delle mod:\u001b[0m")
+                for mod in rem_mod:
+                    print("-> " + str(mod) + " | ", end='')
+                    if mod in files:
+                        tempFileType = mod.split(".")
+                        if len(tempFileType) == 1:
+                            shutil.rmtree(MC_MODS + mod)
+                        else:
+                            os.remove(MC_MODS + mod)
+                        print("\033[31mRimosso!\u001b[0m")
+                    else:
+                        print("\033[31mNon presente!\u001b[0m")
             else:
-                print("Non presente, installo.. ", end='')
-                os.rename(PATH_MODS + mod, MC_MODS + mod)
-                print("Fatto!")
+                print("\033[31m\nNessun file da cancellare!\u001b[0m")
+
+            # Nuova creazione della lista dei files in MC_MODS
+            files = os.listdir(MC_MODS)      
+
+            # Aggiunta delle mod
+            if len(add_mod) != 0:
+                print("\u001b[32m\nAggiunta delle mod:\u001b[0m")
+                for mod in add_mod:
+                    print("-> " + str(mod) + " | ", end='')
+                    if mod in files:
+                        print("\u001b[32mGià presente!\u001b[0m")
+                    else:
+                        print("\u001b[32mInstallo.. ", end='')
+                        tempFileType = mod.split(".")
+                        if len(tempFileType) == 1:
+                            shutil.copytree(PATH_MODS + mod, MC_MODS + mod)
+                        else:
+                            os.rename(PATH_MODS + mod, MC_MODS + mod)
+                        print("Fatto!\u001b[0m")
+            else:
+                print("\u001b[32m\nNessun file da aggiungere!\u001b[0m")
     else:
         os.mkdir(MC_MODS)
-        files = os.listdir(MC_MODS)
-        for mod in ALL_MODS:
-            print("-> " + str(mod) + ".. ", end='')
-            if mod in files:
-                print("\u001b[32mOK\u001b[0m")
-            else:
-                print("Non presente, installo.. ", end='')
-                os.rename(PATH_MODS + mod, MC_MODS + mod)
-                print("Fatto!")
+        if type(modList) is list:
 
-    print("Elimino i file del programma.. ", end='')
+            # Aggiunta delle mod
+            files = os.listdir(MC_MODS)
+            for mod in ALL_MODS:
+                print("-> " + str(mod) + " | ", end='')
+                if mod in files:
+                    print("\u001b[32mOK\u001b[0m")
+                else:
+                    print("Installo.. ", end='')
+                    os.rename(PATH_MODS + mod, MC_MODS + mod)
+                    print("Fatto!")
+
+        # Installazione dell'update con versione >= 2.3
+        elif type(modList) is dict:
+
+            add_mod = modList['add']
+            rem_mod = modList['remove']
+            files = os.listdir(MC_MODS)
+
+            # Rimozione delle mod
+            if len(rem_mod) != 0:
+                print("\033[31m\nEliminazione delle mod:\u001b[0m")
+                for mod in rem_mod:
+                    print("-> " + str(mod) + " | ", end='')
+                    if mod in files:
+                        tempFileType = mod.split(".")
+                        if len(tempFileType) == 1:
+                            shutil.rmtree(MC_MODS + mod)
+                        else:
+                            os.remove(MC_MODS + mod)
+                        print("\033[31mRimosso!\u001b[0m")
+                    else:
+                        print("\033[31mNon presente!\u001b[0m")
+            else:
+                print("\033[31m\nNessun file da cancellare!\u001b[0m")
+
+            # Nuova creazione della lista dei files in MC_MODS
+            files = os.listdir(MC_MODS)      
+
+            # Aggiunta delle mod
+            if len(add_mod) != 0:
+                print("\u001b[32m\nAggiunta delle mod:\u001b[0m")
+                for mod in add_mod:
+                    print("-> " + str(mod) + " | ", end='')
+                    if mod in files:
+                        print("\u001b[32mGià presente!\u001b[0m")
+                    else:
+                        print("\u001b[32mInstallo.. ", end='')
+                        tempFileType = mod.split(".")
+                        if len(tempFileType) == 1:
+                            shutil.copytree(PATH_MODS + mod, MC_MODS + mod)
+                        else:
+                            os.rename(PATH_MODS + mod, MC_MODS + mod)
+                        print("Fatto!\u001b[0m")
+            else:
+                print("\u001b[32m\nNessun file da aggiungere!\u001b[0m")
+
+    print("\u001b[34m\nElimino i file del programma.. ", end='')
     shutil.rmtree(VP_DIRECTORY + "VicePack_Original")
     os.remove(VP_DIRECTORY + str(zipFile).replace("files/", ""))
-    print("Fatto!")
+    print("Fatto!\u001b[0m")
 
 
 def __ctrl_hash(hash, filed):
@@ -180,29 +280,37 @@ def check_vicepack_version():
             download_modpack(URL_MODPACK + release_file['versions'][lastRelease]['zipFile'],
                             release_file['versions'][lastRelease]['sha256'], 
                             str(release_file['versions'][lastRelease]['zipFile']).replace("files/", ""))
-            install_data(release_file['versions'][lastRelease]['zipFile'].replace("files/", ""), "lastRelease")
+            install_data(release_file['versions'][lastRelease]['zipFile'].replace("files/", ""), "lastRelease", release_file["2.3"]["modList"])
 
             if (len(updates) != 0):
-                print("Aggiornamenti del modpack da installare: " + str(len(lastRelease)))
-                for update in updates:
-                    if not update == conf_file['versionInstalled']:
-                        print("\nDownload dell'update " + update + " in corso.. ", end='')
-                        download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
-                                        release_file['versions'][update]['sha256'], 
-                                        str(release_file['versions'][update]['zipFile']).replace("files/", ""))
-                        install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), "update")
-                        print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
+                if conf_file['versionInstalled'] == updates[-1]:
+                    print("\u001b[32m\n\nNessun aggiornamento trovato!\u001b[0m")
+                else:
+                    print("Aggiornamenti trovati: " + str(len(temp_versions) - 1 
+                        - temp_versions.index(conf_file['versionInstalled'])) + "\n")
+                    if conf_file['versionInstalled'] in updates:
+                        indexUpdate = updates.index(conf_file['versionInstalled'])
+                    for i in range(indexUpdate + 1, len(updates)):
+                        os.system("cls")
+                        print("Download dell'update " + updates[i] + " in corso.. ", end='')
+                        download_modpack(URL_MODPACK + release_file['versions'][updates[i]]['zipFile'],
+                            release_file['versions'][updates[i]]['sha256'], 
+                            str(release_file['versions'][updates[i]]['zipFile']).replace("files/", ""))
+                        install_data(release_file['versions'][updates[i]]['zipFile'].replace("files/", ""), 
+                            "update", release_file["versions"][updates[i]]["modList"])
+                        print("\u001b[32mVersione " + updates[i] + " installata con successo\u001b[0m")
+                        time.sleep(1)
 
-                # Update dei valori
+                # Update della versione dei vari files
                 menu_file["texts"]["info-modpack"]["text"] = "Vicepack: " + updates[-1] 
                 conf_file['versionInstalled'] = updates[-1]
 
-                # Update della versione in config.json
+                # Update della versione del modpack in config.json
                 file = open(VP_DIRECTORY + "config.json", "w+")     
                 file.write(json.dumps(conf_file, indent=4))
                 file.close()
 
-                # Update della versione in mainmenu.json
+                # Update della versione del modpack in mainmenu.json
                 file = open(MC_CONF + "CustomMainMenu\\mainmenu.json", "w+")
                 file.write(json.dumps(menu_file, indent=4))
                 file.close()
@@ -220,17 +328,21 @@ def check_vicepack_version():
                     print("\u001b[32m\n\nNessun aggiornamento trovato!\u001b[0m")
                 else:
                     print("Aggiornamenti trovati: " + str(len(temp_versions) - 1 
-                        - temp_versions.index(conf_file['versionInstalled'])))
-                    for update in updates:
-                        if not update == conf_file['versionInstalled']:
-                            print("\nDownload dell'update " + update + " in corso.. ", end='')
-                            download_modpack(URL_MODPACK + release_file['versions'][update]['zipFile'],
-                                release_file['versions'][update]['sha256'], str(release_file['versions'][update]['zipFile']).replace("files/", ""))
-                            install_data(release_file['versions'][update]['zipFile'].replace("files/", ""), 
-                            "update")
-                            print("\u001b[32m\nVersione " + update + " scaricata con successo\u001b[0m")
+                        - temp_versions.index(conf_file['versionInstalled'])) + "\n")
+                    if conf_file['versionInstalled'] in updates:
+                        indexUpdate = updates.index(conf_file['versionInstalled'])
+                    for i in range(indexUpdate + 1, len(updates)):
+                        os.system("cls")
+                        print("Download dell'update " + updates[i] + " in corso.. ", end='')
+                        download_modpack(URL_MODPACK + release_file['versions'][updates[i]]['zipFile'],
+                            release_file['versions'][updates[i]]['sha256'], 
+                            str(release_file['versions'][updates[i]]['zipFile']).replace("files/", ""))
+                        install_data(release_file['versions'][updates[i]]['zipFile'].replace("files/", ""), 
+                            "update", release_file["versions"][updates[i]]["modList"])
+                        print("\u001b[32mVersione " + updates[i] + " installata con successo\u001b[0m")
+                        time.sleep(1)
 
-                    # Update dei valori
+                    # Update del numero della versione all'interno della main page
                     menu_file["texts"]["info-modpack"]["text"] = "Vicepack: " + updates[-1] 
                     conf_file['versionInstalled'] = updates[-1]
 
@@ -253,6 +365,7 @@ def check_vicepack_version():
 def download_releases_json():
     print("\nDownload in corso di releases.json dal mirror.. ", end='')
     try:
+        pass
         urllib.request.urlretrieve(URL_MODPACK + "files/json/releases.json",
             VP_DIRECTORY + "releases.json")
     except urllib.error.HTTPError:
@@ -421,7 +534,7 @@ def check_vicepack_installer():
 
 if __name__ == "__main__":
     os.system("cls")
-    print(u"\u001b[33mVicePack Installer - Versione 1.4.1\u001b[0m\n")
+    print(u"\u001b[33mVicePack Installer - Versione 1.5\u001b[0m\n")
     setup_vicepack()
     check_vicepack_installer()
     download_releases_json()

@@ -54,7 +54,7 @@ def update_releases():
     print("\nCreazione del file zip in corso.. ", end="")
     os.mkdir("files\\VicePack_Original")
     os.mkdir("files\\VicePack_Original\\VicePack_Original")
-    shutil.copytree("files\\mods", "files\\VicePack_Original\\VicePack_Original\\mods")
+    shutil.copytree("files\\mods\\add", "files\\VicePack_Original\\VicePack_Original\\mods")
     shutil.copytree("files\\forge", "files\\VicePack_Original\\VicePack_Original\\forge")
     shutil.make_archive("files\\" + zipFile, 'zip', 'files\\VicePack_Original')
     shutil.rmtree("files\\VicePack_Original")
@@ -73,7 +73,10 @@ def update_releases():
     print("OK")
 
     print("Creazione della lista delle mod in corso.. ", end='')
-    modList = os.listdir("files\\mods")
+    modList = {
+        "add" : os.listdir("files\\mods\\add"),
+        "remove" : os.listdir("files\\mods\\remove")
+    }
     print("OK")
 
     changelog = input(str("\nChangelog: "))
