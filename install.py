@@ -5,6 +5,7 @@ VicePack installer
 """
 
 import json
+import argparse
 import pathlib
 import os
 import requests
@@ -424,7 +425,7 @@ def setup_vicepack():
 
         # Ctrl for files in VP_DIRECTORY
         for file in main_dir_files:
-            print("--> " + file + ".. ", end='')    
+            print("--> " + file + " | ", end='')    
             if not os.path.exists(VP_DIRECTORY + file):
                     print("Non presente, creo il file.. ", end='')
                     create_config()
@@ -451,7 +452,7 @@ def setup_vicepack():
 
         # Ctrl files in Config dir of VP_DIRECTORY
         for file in conf_dir_files:
-            print("--> " + file + ".. ", end='')
+            print("--> " + file + " | ", end='')
             if not os.path.exists(MC_CONF + file):
                 print("Non scaricato, scarico i dati.. ", end='')
                 download_cmm_data()
@@ -533,8 +534,24 @@ def check_vicepack_installer():
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-fc", "--fix-config", action="store_true",
+                        help="Fix launcher_profiles.json for Shignima Launcher SE v4400")
+    parser.add_argument("-h", "--help", action='help', default=argparse.SUPPRESS,
+                        help="Show this help message and exit")
+
+    args = parser.parse_args()
+
     os.system("cls")
     print(u"\u001b[33mVicePack Installer - Versione 1.5\u001b[0m\n")
+
+    if args.fix_config:
+        setup_vicepack()
+        print("\nFix 'launcher_profiles.json' | ", end="")
+        modify_json_shignima()
+        exit(0)
+    
     setup_vicepack()
     check_vicepack_installer()
     download_releases_json()
