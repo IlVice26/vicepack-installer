@@ -26,4 +26,4 @@ jobs:
         pip install requests
     - name: Test with pytest
       run: |
-        install.py
+        python3 install.py
